@@ -14,18 +14,18 @@ namespace Demi.Domain.Entities
 	{
 		[Key]
 		[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-		public string Id { get; set; }
-		public string ProjectName { get; set; }
-		public string Description { get; set; }
-		public string AdditionalNotes { get; set; }
+		public string Id { get; set; } = string.Empty;
+		public string ProjectName { get; set; } = string.Empty;
+		public string Description { get; set; } = string.Empty;
+		public string AdditionalNotes { get; set; } = string.Empty;
 		public DateTime RequestDate { get; set; }
 
 		public EStates State { get; set; } = EStates.Pending;
-		public string Reason { get; set; } = "";
+		public string Reason { get; set; } = string.Empty;
 		public DateTime? ApprovalDate { get; set; }
 
 		// Foreign Keys
-		public string RequesterId { get; set; }
+		public string RequesterId { get; set; } = string.Empty;
 		public User RequesterUser { get; set; } = null!;
 
 		public string? ApprovalUserId { get; set; }

@@ -12,17 +12,17 @@ namespace Demi.Domain.Entities
 	{
 		[Key]
 		[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-		public string Id { get; set; }
-		public string SourceUri { get; set; }
-		public string GitBranch { get; set; }
-		public string SubDomainRequested { get; set; }
+		public string Id { get; set; } = string.Empty;
+		public string SourceUri { get; set; } = string.Empty;
+		public string GitBranch { get; set; } = string.Empty;
+		public string SubDomainRequested { get; set; } = string.Empty;
 		[NotMapped]
 		public string FullSubDomainRequested => $"{SubDomainRequested}.sxb-platform.eu";
 
 		public ESubDomainTypes SubDomainRequestedType { get; set; } = ESubDomainTypes.None;
 
 		// Foreign Keys
-		public string FormId { get; set; }
+		public string FormId { get; set; } = string.Empty;
 		public Form Form { get; set; } = null!;
 	}
 

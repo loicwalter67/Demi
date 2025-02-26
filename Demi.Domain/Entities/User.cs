@@ -10,7 +10,7 @@ namespace Demi.Domain.Entities
 	//[Table("Users")]
 	public class User : IdentityUser
 	{
-		public string Name { get; set; } = "";
+		public string Name { get; set; } = string.Empty;
 		public ICollection<Form> RequestedForms { get; set; } = [];
 		public ICollection<Form> ApprovedForms { get; set; } = [];
 	}

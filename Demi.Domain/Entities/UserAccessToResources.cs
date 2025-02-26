@@ -15,14 +15,14 @@ namespace Demi.Domain.Entities
 	{
 		[Key]
 		[DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-		public string Id { get; set; }
+		public string Id { get; set; } = string.Empty;
 
-		public string Email { get; set; }
+		public string Email { get; set; } = string.Empty;
 		public EResourceTypes ResourceType { get; set; } = EResourceTypes.Source;
 		public EUserAccessLevels AccessLevel { get; set; } = EUserAccessLevels.Read;
 
 		//Foreign Keys
-		public string FormId { get; set; }
+		public string FormId { get; set; } = string.Empty;
 		public Form Form { get; set; } = null!;
 	}
 
