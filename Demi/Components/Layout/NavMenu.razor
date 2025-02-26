@@ -1,0 +1,64 @@
+﻿@implements IDisposable
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+<MudDrawer @bind-Open="@_open" Fixed="false" Elevation="1" Variant="@DrawerVariant.Mini" OpenMiniOnHover Class="sticky left-0 top-0" Anchor="Anchor.Left" Height="100vh">
+	<MudNavMenu Class="h-screen py-6">
+		<MudStack Justify="Justify.SpaceBetween" Class="h-full">
+			<AuthorizeView>
+				<Authorized>
+					<MudStack Justify="Justify.SpaceBetween" Class="h-full">
+						<div>
+							<MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.List">Forms</MudNavLink>
+							<MudNavLink Href="forms/new" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Add">Create</MudNavLink>
+						</div>
+						<div>
+							<form action="Account/Logout" method="post" @ref="form">
+								<AntiforgeryToken />
+								<input type="hidden" name="ReturnUrl" value="@currentUrl" />
+								<MudNavLink OnClick="@(async (_) => { await JS.InvokeVoidAsync("submitForm", form); })" Icon="@Icons.Material.Filled.Logout">Logout</MudNavLink>
+							</form>
+						</div>
+					</MudStack>
+				</Authorized>
+				<NotAuthorized>
+					<MudStack Justify="Justify.FlexEnd" Class="h-full">
+						<MudNavLink Href="account/register" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.PersonAdd">Register</MudNavLink>
+						<MudNavLink Href="account/login" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Person">Login</MudNavLink>
+					</MudStack>
+				</NotAuthorized>
+			</AuthorizeView>
+			<MudDivider />
+			DeMi
+		</MudStack>
+	</MudNavMenu>
+</MudDrawer>
+
+@code {
+	private string? currentUrl;
+	private ElementReference form { get; set; }
+
+	protected override void OnInitialized()
+	{
+		currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+		NavigationManager.LocationChanged += OnLocationChanged;
+	}
+
+	private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+	{
+		currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+		StateHasChanged();
+	}
+
+	public void Dispose()
+	{
+		NavigationManager.LocationChanged -= OnLocationChanged;
+	}
+
+	private bool _open = false;
+
+	private void ToggleDrawer()
+	{
+		_open = !_open;
+	}
+}

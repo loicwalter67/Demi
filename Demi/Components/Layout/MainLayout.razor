@@ -1,0 +1,53 @@
+﻿@inherits LayoutComponentBase
+@using Demi.Components.Layout
+
+@inject IJSRuntime JS
+
+<MudThemeProvider Theme="CustomTheme" @rendermode="InteractiveServer" />
+<MudPopoverProvider @rendermode="InteractiveServer" />
+<MudDialogProvider @rendermode="InteractiveServer" FullWidth="true" MaxWidth="MaxWidth.Medium" CloseOnEscapeKey="true" CloseButton="true" />
+<MudSnackbarProvider @rendermode="InteractiveServer" />
+
+<MudLayout>
+	<MudStack Row Spacing="0">
+		<NavMenu />
+		<MudMainContent Class="w-full py-9">
+			<div class="m-auto max-w-5xl">
+				@Body
+			</div>
+		</MudMainContent>
+	</MudStack>
+</MudLayout>
+
+@code {
+	MudTheme CustomTheme = new();
+
+	private string cssPrimaryVariableValue = "";
+	private string cssSecondaryVariableValue = "";
+	private string cssPrimaryDarkenVariableValue = "";
+	private string cssPrimaryLightenVariableValue = "";
+
+	/// <summary>
+	/// This method sets the primary and secondary colors of the theme, based on the variables defined in the CSS.
+	/// </summary>
+	/// <param name="firstRender"></param>
+	/// <returns></returns>
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			cssPrimaryVariableValue = await JS.InvokeAsync<string>("getCssVariable", "--color-primary");
+			CustomTheme.PaletteLight.Primary = cssPrimaryVariableValue;
+
+			cssSecondaryVariableValue = await JS.InvokeAsync<string>("getCssVariable", "--color-secondary");
+			CustomTheme.PaletteLight.Secondary = cssSecondaryVariableValue;
+
+			cssPrimaryDarkenVariableValue = await JS.InvokeAsync<string>("getCssVariable", "--color-primary-darken");
+			CustomTheme.PaletteLight.PrimaryDarken = cssPrimaryDarkenVariableValue;
+
+			cssPrimaryLightenVariableValue = await JS.InvokeAsync<string>("getCssVariable", "--color-primary-lighten");
+			CustomTheme.PaletteLight.SecondaryDarken = cssPrimaryLightenVariableValue;
+			StateHasChanged();
+		}
+	}
+}

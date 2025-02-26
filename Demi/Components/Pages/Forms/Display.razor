@@ -1,0 +1,157 @@
+﻿@page "/forms/{id}"
+
+@using Demi.Application.Interfaces
+@using Demi.Domain.Entities
+@using Demi.Domain.Enums
+@using Microsoft.AspNetCore.Authorization
+@using System.Security.Claims
+@using Demi.Components.Forms
+
+@attribute [Authorize]
+
+@inject NavigationManager NavigationManager
+@inject IFormRepository FormRepository
+@inject AuthenticationStateProvider GetAuthenticationStateAsync
+@inject IDialogService DialogService
+
+
+@if (Model is not null)
+{
+	<MudStack>
+		<MudStack Row AlignItems="AlignItems.Center">
+			<MudText Typo="Typo.h4" Class="underline decoration-primary">@Model.ProjectName</MudText>
+			<StateChip eStates="@Model.State" />
+		</MudStack>
+		<MudText Typo="Typo.body2">
+			Requested by <strong>@Model.RequesterUser?.Name</strong> on @Model.RequestDate.GetLongDatePatternEN().
+		</MudText>
+		@if (!_isPending)
+		{
+			<MudText Typo="Typo.body2">
+				@Model.State.ToString() by <strong>@Model.ApprovalUser?.Name</strong> on @Model.ApprovalDate?.GetLongDatePatternEN().
+			</MudText>
+			@if (!string.IsNullOrEmpty(Model.Reason))
+			{
+				<MudText Typo="Typo.body2">
+					<strong Class="underline decoration-primary">Review:</strong> @Model.Reason
+				</MudText>
+			}
+		}
+		<MudDivider />
+		<MudText Typo="Typo.body1" Class="underline decoration-primary">
+			<strong>Description:</strong>
+		</MudText>
+		<MudText Typo="Typo.body1">
+			@Model.Description
+		</MudText>
+		@if (!string.IsNullOrEmpty(Model.AdditionalNotes))
+		{
+			<MudText Typo="Typo.body1" Class="underline decoration-primary">
+				<strong>Additional notes:</strong>
+			</MudText>
+			<MudText Typo="Typo.body1">
+				@Model.AdditionalNotes
+			</MudText>
+		}
+		<MudExpansionPanels MultiExpansion Elevation="0" Class="mt-3 border">
+			<MudExpansionPanel>
+				<TitleContent>
+					<MudText Typo="Typo.body1" Class="underline decoration-primary"><strong>Sources</strong></MudText>
+				</TitleContent>
+				<ChildContent>
+					<MudDataGrid Items="@Model.Sources" Hover Filterable Elevation="0">
+						<Columns>
+							<PropertyColumn Title="URL" Property="x=>x.SourceUri" />
+							<PropertyColumn Title="Branch" Property="x=>x.GitBranch" />
+							<PropertyColumn Title="Subdomain" Property="x => x.FullSubDomainRequested" />
+							<PropertyColumn Title="Type" Property="x=>x.SubDomainRequestedType" />
+						</Columns>
+					</MudDataGrid>
+				</ChildContent>
+			</MudExpansionPanel>
+			<MudExpansionPanel>
+				<TitleContent>
+					<MudText Typo="Typo.body1" Class="underline decoration-primary"><strong>User permissions</strong></MudText>
+				</TitleContent>
+				<ChildContent>
+					<MudDataGrid Items="@Model.UserPermissions" Hover Filterable Elevation="0">
+						<Columns>
+							<PropertyColumn Title="Email" Property="x => x.Email" />
+							<PropertyColumn Title="Permission" Property="x => x.AccessLevel" />
+							<PropertyColumn Title="Resource" Property="x => x.ResourceType" />
+						</Columns>
+					</MudDataGrid>
+				</ChildContent>
+			</MudExpansionPanel>
+		</MudExpansionPanels>
+		<AuthorizeView Roles="Admin">
+			@if (_isPending)
+			{
+				<MudStack Row>
+					<MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="@((_) => OpenDialogAsync(EStates.Approved))">Approve</MudButton>
+					<MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="@((_) => OpenDialogAsync(EStates.Rejected))">Reject</MudButton>
+				</MudStack>
+			}
+		</AuthorizeView>
+	</MudStack>
+}
+else
+{
+	<p>Form not found</p>
+}
+
+@code {
+	[Parameter] public required string Id { get; set; }
+	private Form Model = new();
+
+	private bool _isPending => Model?.State == EStates.Pending;
+
+	protected override async Task OnInitializedAsync()
+	{
+
+		if (Id is not null)
+		{
+			try
+			{
+				Model = await FormRepository.GetById(Id);
+			}
+			catch
+			{
+				NavigationManager.NavigateTo("/");
+			}
+		}
+		else
+		{
+			NavigationManager.NavigateTo("/");
+		}
+	}
+
+	private async Task OpenDialogAsync(EStates state)
+	{
+		var rightStateString = state == EStates.Approved ? "Approve" : "Reject";
+		var title = $"{rightStateString} request for {Model.ProjectName}";
+
+		var dialog = await DialogService.ShowAsync<AddReasonAndConfirmDialog>(title);
+		var result = await dialog.Result;
+
+		if (result is not null && !result.Canceled)
+		{
+			var reason = result.Data as string ?? "";
+			await ChangeStatus(state, reason);
+		}
+	}
+
+	private async Task ChangeStatus(EStates state, string reason)
+	{
+		var authstate = await GetAuthenticationStateAsync.GetAuthenticationStateAsync();
+		var userId = authstate.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+		if (string.IsNullOrWhiteSpace(userId))
+		{
+			return;
+		}
+
+		await FormRepository.ChangeStatus(Id, state, reason, userId);
+		StateHasChanged();
+	}
+}

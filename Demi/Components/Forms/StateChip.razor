@@ -1,0 +1,32 @@
+﻿@using Demi.Domain.Enums;
+
+<MudChip T="string" Color="@GetStateChipColor()" Icon="@GetStateChipIcon()">
+	@eStates.ToString()
+</MudChip>
+
+
+@code {
+	[Parameter] public required EStates eStates { get; set; }
+	
+	private Color GetStateChipColor()
+	{
+		return eStates switch
+		{
+			EStates.Approved => Color.Success,
+			EStates.Rejected => Color.Error,
+			EStates.Pending => Color.Warning,
+			_ => throw new ArgumentOutOfRangeException(nameof(eStates), eStates, null)
+		};
+	}
+
+	private string GetStateChipIcon()
+	{
+		return eStates switch
+		{
+			EStates.Approved => Icons.Material.Filled.CheckCircle,
+			EStates.Rejected => Icons.Material.Filled.Cancel,
+			EStates.Pending => Icons.Material.Filled.HourglassTop,
+			_ => throw new ArgumentOutOfRangeException(nameof(eStates), eStates, null)
+		};
+	}
+}

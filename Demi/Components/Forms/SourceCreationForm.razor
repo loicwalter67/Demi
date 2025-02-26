@@ -1,0 +1,33 @@
+﻿@using Demi.Domain.Entities
+@using Demi.Domain.Enums
+@using System.Text.RegularExpressions
+@using System.ComponentModel.DataAnnotations
+@using FluentValidation
+@using Demi.Application.Interfaces
+@using Demi.Components.Forms
+@using System.Security.Claims;
+
+<MudForm Model="@SourceModel" Validation="@(sourceValidator.ValidateValue)" ValidationDelay="0">
+	<MudStack>
+		<MudStack Row StretchItems="StretchItems.All">
+			<MudTextField Required Label="URL" Variant="Variant.Outlined" @bind-Value="SourceModel.SourceUri" For="@(()=>SourceModel.SourceUri)" Immediate />
+			<MudTextField Required Label="Git branch" Variant="Variant.Outlined" @bind-Value="SourceModel.GitBranch" For="@(()=>SourceModel.GitBranch)" Immediate />
+		</MudStack>
+		<MudStack Row StretchItems="StretchItems.All">
+			<MudTextField Required Label="Sub domain" Variant="Variant.Outlined" @bind-Value="SourceModel.SubDomainRequested" For="@(()=>SourceModel.SubDomainRequested)" Immediate AdornmentText=".sxb-platform.eu" Adornment="Adornment.End" />
+			<MudSelect Required Label="Sub Domain for" T="ESubDomainTypes" Variant="Variant.Outlined" @bind-Value="SourceModel.SubDomainRequestedType" For="@(() => SourceModel.SubDomainRequestedType)">
+				@foreach (ESubDomainTypes item in Enum.GetValues(typeof(ESubDomainTypes)))
+				{
+					<MudSelectItem Value="@item">
+						@item.ToString()
+					</MudSelectItem>
+				}
+			</MudSelect>
+		</MudStack>
+	</MudStack>
+</MudForm>
+
+@code {
+	[Parameter] public required Source SourceModel { get; set; }
+	SourceFluentValidator sourceValidator = new();
+}

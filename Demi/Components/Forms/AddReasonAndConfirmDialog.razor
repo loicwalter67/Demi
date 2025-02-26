@@ -1,0 +1,27 @@
+﻿@using Demi.Domain.Enums;
+
+<MudDialog Class="rounded-lg p-2">
+	<TitleContent>
+		<MudText Typo="Typo.h4">
+			@MudDialog.Title
+		</MudText>
+	</TitleContent>
+	<DialogContent >
+		<MudTextField Label="Reason" @bind-Value="_reason" Lines="5" Variant="Variant.Outlined" Immediate />
+	</DialogContent>
+	<DialogActions>
+		<MudButton OnClick="Cancel" Variant="Variant.Outlined">Cancel</MudButton>
+		<MudButton Color="Color.Primary" OnClick="Submit" Variant="Variant.Filled">Submit</MudButton>
+	</DialogActions>
+</MudDialog>
+
+@code {
+	[CascadingParameter]
+	private IMudDialogInstance MudDialog { get; set; }
+
+	private string _reason = "";
+
+	private void Submit() => MudDialog.Close(DialogResult.Ok(_reason));
+
+	private void Cancel() => MudDialog.Cancel();
+}

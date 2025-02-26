@@ -1,0 +1,138 @@
+﻿@page "/forms/new"
+@using Microsoft.AspNetCore.Authorization
+@using Demi.Domain.Entities
+@using System.Text.RegularExpressions
+@using System.ComponentModel.DataAnnotations
+@using FluentValidation
+@using Demi.Application.Interfaces
+@using Demi.Components.Forms
+@using System.Security.Claims;
+
+@attribute [Authorize]
+
+@inject NavigationManager NavigationManager
+@inject IFormRepository FormRepository
+@inject AuthenticationStateProvider GetAuthenticationStateAsync
+
+
+<MudForm Model="@FormModel" @ref="@_baseForm" Validation="@(formValidator.ValidateValue)" ValidationDelay="0">
+	<MudText Typo="Typo.h4" Class="pb-3 underline decoration-primary">New request</MudText>
+	<MudStack>
+		<MudTextField Required Label="Project name" Variant="Variant.Outlined" @bind-Value="FormModel.ProjectName" For="@(()=>FormModel.ProjectName)" Immediate />
+		<MudTextField Required Label="Description" Variant="Variant.Outlined" @bind-Value="FormModel.Description" For="@(()=>FormModel.Description)" Lines="5" Immediate />
+		<MudDivider />
+		@if (FormModel.Sources is not null && FormModel.Sources.Count > 0)
+		{
+			for (var i = 0; i < FormModel.Sources.Count; i++)
+			{
+				// localI is used to avoid rendering issues with lambdas expressions
+				// see https://stackoverflow.com/a/54813295
+				var localI = i;
+				var source = FormModel.Sources[localI];
+				<MudPaper Elevation="1" Class="p-3">
+					<MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+						<MudText Typo="Typo.h5">
+							Source n°@localI
+						</MudText>
+						<MudToolBar Class="!p-0">
+							@if (localI == FormModel.Sources.Count - 1)
+							{
+								<MudTooltip Arrow Text="Add a new source">
+									<MudIconButton Icon="@Icons.Material.Filled.Add" Color="Color.Primary" OnClick="@(() => FormModel.Sources.Add(new()))" />
+								</MudTooltip>
+							}
+							@if (localI != 0)
+							{
+								<MudTooltip Arrow" Text="Remove this source">
+									<MudIconButton Icon="@Icons.Material.Filled.Remove" Color="Color.Primary" Onclick="@(() => FormModel.Sources.RemoveAt(localI))" />
+								</MudTooltip>
+							}
+						</MudToolBar>
+					</MudStack>
+					<SourceCreationForm SourceModel="source" />
+				</MudPaper>
+			}
+		}
+		<MudDivider />
+		@if (FormModel.UserPermissions is not null && FormModel.UserPermissions.Count > 0)
+		{
+			for (var i = 0; i < FormModel.UserPermissions.Count; i++)
+			{
+				// localI is used to avoid rendering issues with lambdas expressions
+				// see https://stackoverflow.com/a/54813295
+				var localI = i;
+				var userPermission = FormModel.UserPermissions[localI];
+				<MudPaper Elevation="1" Class="p-3">
+					<MudStack Row Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+						<MudText Typo="Typo.h5">
+							User permission n°@localI
+						</MudText>
+						<MudToolBar Class="!p-0">
+							@if (localI == FormModel.UserPermissions.Count - 1)
+							{
+								<MudTooltip Arrow Text="Add a new user permission">
+									<MudIconButton Icon="@Icons.Material.Filled.Add" Color="Color.Primary" OnClick="@(() => FormModel.UserPermissions.Add(new()))" />
+								</MudTooltip>
+							}
+							@if (localI != 0)
+							{
+								<MudTooltip Arrow Text="Remove this user permission">
+									<MudIconButton Icon="@Icons.Material.Filled.Remove" Color="Color.Primary" Onclick="@(() => FormModel.UserPermissions.RemoveAt(localI))" />
+								</MudTooltip>
+							}
+						</MudToolBar>
+					</MudStack>
+					<UserAccessRequestCreationForm UATRModel="userPermission" />
+				</MudPaper>
+			}
+		}
+		<MudDivider />
+		<MudTextField Label="Additional notes (Optional)" Variant="Variant.Outlined" @bind-Value="FormModel.AdditionalNotes" For="@(()=>FormModel.AdditionalNotes)" Lines="5" Immediate />
+		<MudButton Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" OnClick="@(Submit)">Submit</MudButton>
+	</MudStack>
+</MudForm>
+
+@code {
+	private Form FormModel { get; set; } = new()
+		{
+			Sources = new List<Source>() {
+				new(),
+			},
+			UserPermissions = new List<UserAccessToResources>() {
+				new(),
+			}
+		};
+	private MudForm? _baseForm;
+	FormFluentValidator formValidator = new();
+
+	private async Task Submit()
+	{
+		if (_baseForm is null) return;
+		await _baseForm.Validate();
+		if (_baseForm.IsValid)
+		{
+			await Submit(FormModel);
+		}
+		StateHasChanged();
+	}
+
+	private async Task Submit(Form model)
+	{
+		var authstate = await GetAuthenticationStateAsync.GetAuthenticationStateAsync();
+		var userId = authstate.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+		if (string.IsNullOrWhiteSpace(userId))
+		{
+			NavigationManager.NavigateTo("/authentication/login");
+			return;
+		}
+
+		model.RequestDate = DateTime.Now;
+		model.RequesterId = userId;
+
+		model.AdditionalNotes ??= "";
+
+		await FormRepository.Create(model);
+		NavigationManager.NavigateTo("/");
+	}
+}

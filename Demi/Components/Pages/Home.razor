@@ -1,0 +1,83 @@
+﻿@page "/"
+
+@using Demi.Application.Interfaces
+@using Demi.Components.Forms
+@using Demi.Domain.Entities
+@using Demi.Domain.Enums
+@using Microsoft.AspNetCore.Authorization
+
+
+@attribute [Authorize]
+
+@inject NavigationManager NavigationManager
+@inject IFormRepository FormRepository
+@inject AuthenticationStateProvider GetAuthenticationStateAsync
+
+<MudStack Row Class="pb-6">
+	<MudTextField @bind-Value="_searchTerm" Label="Search" Variant="Variant.Outlined" Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search" Immediate Class="my-auto" />
+	<MudSelect @bind-Value="_searchState" Label="State" T="EStates" Variant="Variant.Outlined" Class="my-auto">
+		@foreach (EStates item in Enum.GetValues(typeof(EStates)))
+		{
+			<MudSelectItem Value="@item">
+				@item.ToString()
+			</MudSelectItem>
+		}
+	</MudSelect>
+	<MudDateRangePicker @bind-DateRange="_searchDateRange" Variant="Variant.Outlined" PickerVariant="PickerVariant.Dialog" Class="my-auto" Clearable />
+</MudStack>
+
+<MudStack>
+	@if (forms is not null)
+	{
+		@foreach (var form in GetFilteredForms())
+		{
+			<MudPaper @key="form.Id" Elevation="2" Class="my-4 px-4 py-6">
+				<MudStack Row>
+					<MudStack>
+						<MudStack Row AlignItems="AlignItems.Center">
+							<MudText Typo="Typo.h4" Class="underline decoration-primary">
+								<MudHighlighter Text="@form.ProjectName" HighlightedText="@_searchTerm" />
+							</MudText>
+							<StateChip eStates="@form.State" />
+						</MudStack>
+						<MudText Typo="Typo.body1">
+							Requested by <strong>@form.RequesterUser?.Name</strong> on @form.RequestDate.GetLongDatePatternEN()
+						</MudText>
+					</MudStack>
+					<MudSpacer />
+					<MudDivider Vertical />
+					<MudStack>
+						<MudButton OnClick="@((_) => NavigationManager.NavigateTo(($"/forms/{form.Id}")))" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Visibility" Variant="Variant.Filled">
+							View
+						</MudButton>
+					</MudStack>
+				</MudStack>
+			</MudPaper>
+		}
+	}
+</MudStack>
+
+@code {
+	List<Form>? forms = new List<Form>();
+	private string _searchTerm { get; set; } = "";
+	private EStates _searchState { get; set; } = EStates.All;
+	private DateRange? _searchDateRange { get; set; }
+
+	protected override async Task OnInitializedAsync()
+	{
+		var authstate = await GetAuthenticationStateAsync.GetAuthenticationStateAsync();
+		var user = authstate.User;
+
+		var result = await FormRepository.GetAllFor(user);
+		forms = result.OrderByDescending(e => e.RequestDate).ToList();
+	}
+
+	private IEnumerable<Form> GetFilteredForms()
+	{
+		// Filter forms based on search term, state and date range
+		// Because DateTime store the time, we need to remove 1 day to compare the date only (because 25th october 00:00 < 25th october 12:00) => we still need to include it.
+		return forms.Where(e => e.ProjectName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) &&
+			(_searchState == EStates.All || e.State == _searchState) &&
+			(_searchDateRange is null || _searchDateRange?.Start is null || _searchDateRange?.End is null || (e.RequestDate >= _searchDateRange?.Start && e.RequestDate.AddDays(-1) <= _searchDateRange?.End)));
+	}
+}

@@ -1,0 +1,35 @@
+﻿@using Demi.Domain.Entities
+@using Demi.Domain.Enums
+@using System.Text.RegularExpressions
+@using System.ComponentModel.DataAnnotations
+@using FluentValidation
+@using Demi.Application.Interfaces
+@using Demi.Components.Forms
+@using System.Security.Claims;
+
+<MudForm Model="@UATRModel" Validation="@(UATRValidator.ValidateValue)" ValidationDelay="0">
+	<MudTextField Required Label="User email" Variant="Variant.Outlined" @bind-Value="UATRModel.Email" For="@(()=>UATRModel.Email)" Immediate />
+	<MudStack Row>
+		<MudSelect Required T="EUserAccessLevels" Label="Permissions" Variant="Variant.Outlined" @bind-Value="UATRModel.AccessLevel" For="@(()=>UATRModel.AccessLevel)" Immediate>
+			@foreach (EUserAccessLevels item in Enum.GetValues(typeof(EUserAccessLevels)))
+			{
+				<MudSelectItem Value="@item">
+					@item.ToString()
+				</MudSelectItem>
+			}
+		</MudSelect>
+		<MudSelect Required T="EResourceTypes" Label="Ressource type" Variant="Variant.Outlined" @bind-Value="UATRModel.ResourceType" For="@(()=>UATRModel.ResourceType)" Immediate>
+			@foreach (EResourceTypes item in Enum.GetValues(typeof(EResourceTypes)))
+			{
+				<MudSelectItem Value="@item">
+					@item.ToString()
+				</MudSelectItem>
+			}
+		</MudSelect>
+	</MudStack>
+</MudForm>
+
+@code {
+	[Parameter] public required UserAccessToResources UATRModel { get; set; }
+	UserAccessToResourcesFluentValidator UATRValidator = new();
+}
